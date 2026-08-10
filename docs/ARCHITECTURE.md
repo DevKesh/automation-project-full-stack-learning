@@ -6,6 +6,21 @@
 - **YAGNI (You Ain't Gonna Need It):** Avoid over-engineering, unnecessary abstractions, and third-party dependency bloat.
 - **Single Responsibility Principle (SRP):** Every class must have only one reason to change.
 
+> **Related documentation:** For parallel execution, cross-browser support, and CLI-driven
+> configuration (`-Dbrowser`, `-Dthreads`, `-Dheadless`), see
+> [PARALLEL-AND-CROSS-BROWSER.md](./PARALLEL-AND-CROSS-BROWSER.md). To understand *how it works
+> under the hood* — the runtime trace and what `-D` really does — see
+> [DEEP-DIVE-HOW-IT-WORKS.md](./DEEP-DIVE-HOW-IT-WORKS.md). For *how the classes collaborate*
+> (who calls whom, with a sequence diagram) to launch your chosen browser from an `mvn` command,
+> see [CLASS-INTERACTION-BROWSER-LAUNCH.md](./CLASS-INTERACTION-BROWSER-LAUNCH.md). For the
+> on-failure screenshot/page-source hook and the investigation into why headless runs fail against
+> Myntra, see [FAILURE-DIAGNOSTICS-AND-HEADLESS-FINDING.md](./FAILURE-DIAGNOSTICS-AND-HEADLESS-FINDING.md).
+> For the **Android/Appium** end-to-end flow — how the mobile classes collaborate to launch a
+> device session from `mvn test -Pmobile` — see
+> [CLASS-INTERACTION-MOBILE-APPIUM.md](./CLASS-INTERACTION-MOBILE-APPIUM.md). For a copy-paste
+> **command cheatsheet** (web, mobile-web, native app launch, adb/appium helpers), see
+> [COMMANDS.md](./COMMANDS.md).
+
 ---
 
 ## Phase 1: Project Anatomy & Dependency Management

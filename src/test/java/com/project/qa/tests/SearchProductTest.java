@@ -1,5 +1,6 @@
 package com.project.qa.tests;
 
+import com.project.qa.constants.*;
 import com.project.qa.core.*;
 import com.project.qa.pages.*;
 import org.testng.*;
@@ -9,7 +10,7 @@ import java.util.*;
 
 public class SearchProductTest extends BaseTest {
 
-	@Test
+	@Test(groups = TestGroups.WEB)
 	public void searchProduct() {
 		// Code to search for a product on Myntra
 		String productName = "Shoes";

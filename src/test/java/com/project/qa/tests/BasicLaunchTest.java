@@ -1,11 +1,12 @@
 package com.project.qa.tests;
 
+import com.project.qa.constants.*;
 import com.project.qa.core.*;
 import org.testng.*;
 import org.testng.annotations.*;
 
 public class BasicLaunchTest extends BaseTest {
-	@Test
+	@Test(groups = TestGroups.WEB)
 	public void testMyntraHomePageTitle() {
 
 		// 1. Navigate to the application

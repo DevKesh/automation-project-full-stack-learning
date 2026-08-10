@@ -12,9 +12,15 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <selenium.version>4.18.1</selenium.version>
+        <!-- Pinned within java-client 9.3.0's Selenium range [4.19.0, 5.0). We must not let Maven
+             float this to 4.46.x, which removed org.openqa.selenium.ContextAware that java-client
+             still references (breaks Appium context switching at compile and runtime). -->
+        <selenium.version>4.25.0</selenium.version>
+        <appium.java-client.version>9.3.0</appium.java-client.version>
         <testng.version>7.9.0</testng.version>
         <aspectj.version>1.9.21</aspectj.version>
+        <!-- Default parallel thread count; override per run with -Dthreads=N -->
+        <threads>3</threads>
     </properties>
 
     <dependencies>
@@ -22,6 +28,14 @@
             <groupId>org.seleniumhq.selenium</groupId>
             <artifactId>selenium-java</artifactId>
             <version>${selenium.version}</version>
+        </dependency>
+
+        <!-- Appium client for Android/iOS. AndroidDriver IS-A WebDriver, so it slots into the
+             existing ThreadLocal<WebDriver> without touching DriverManager or the page layer. -->
+        <dependency>
+            <groupId>io.appium</groupId>
+            <artifactId>java-client</artifactId>
+            <version>${appium.java-client.version}</version>
         </dependency>
 
         <dependency>
@@ -51,10 +65,38 @@
             <artifactId>jackson-databind</artifactId>
             <version>2.17.0</version> <!-- You can update this to the latest stable version if needed -->
         </dependency>
+        <!-- Allure @Step annotation for the src/main page layer (BasePage). allure-testng is test-scoped
+             and brings TestNG integration we don't want in the main artifact; allure-java-commons carries
+             just the annotation + Allure API. Pinned to the suite's 2.29.0 line to keep one report engine. -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-java-commons</artifactId>
+            <version>2.29.0</version>
+        </dependency>
         <!-- Allure TestNG -->
         <dependency>
             <groupId>io.qameta.allure</groupId>
             <artifactId>allure-testng</artifactId>
+            <version>2.29.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- REST Assured: HTTP transport for the API test layer. Test-scoped so it never
+             leaks into the src/main Selenium artifact. Ships Jackson-backed (de)serialization,
+             so response.as(Post.class) reuses the same POJO discipline as the UI data layer. -->
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <version>5.5.0</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Bridges REST Assured into the existing Allure/AspectJ report: the AllureRestAssured
+             filter auto-attaches each request + response alongside UI results. Version pinned to
+             the suite's Allure line (2.29.0) to avoid a split report engine. -->
+        <dependency>
+            <groupId>io.qameta.allure</groupId>
+            <artifactId>allure-rest-assured</artifactId>
             <version>2.29.0</version>
             <scope>test</scope>
         </dependency>
@@ -63,7 +105,58 @@
 
 
     <build>
+        <!--
+          Filter testng.xml so ${threads} is substituted at build time from the Maven property.
+          Surefire then runs the filtered copy in target/test-classes, letting `-Dthreads=N`
+          control parallelism (TestNG reads thread-count from the suite XML, not from Surefire).
+        -->
+        <testResources>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>testng.xml</include>
+                </includes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources</directory>
+                <filtering>false</filtering>
+                <excludes>
+                    <exclude>testng.xml</exclude>
+                </excludes>
+            </testResource>
+        </testResources>
         <plugins>
+            <!--
+              Wipe stale Allure results before every build that runs tests. Surefire writes one
+              UUID-named json per test and NEVER overwrites, so without this the folder accumulates
+              every run since day one and `mvn allure:serve` shows a cumulative, mostly-stale report.
+              Bound to `initialize` (runs on `mvn test`) and scoped via excludeDefaultDirectories so
+              it deletes ONLY allure-results, not the rest of target/. A bare `mvn allure:serve`
+              invocation skips the lifecycle, so it still serves the latest run's results.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.3.2</version>
+                <executions>
+                    <execution>
+                        <id>clean-allure-results</id>
+                        <phase>initialize</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <configuration>
+                            <excludeDefaultDirectories>true</excludeDefaultDirectories>
+                            <filesets>
+                                <fileset>
+                                    <directory>${project.build.directory}/allure-results</directory>
+                                </fileset>
+                            </filesets>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -75,7 +168,7 @@
                 <version>3.2.5</version>
                 <configuration>
                     <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+                        <suiteXmlFile>${project.build.testOutputDirectory}/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <!-- ADD THIS BLOCK to force Allure into the target folder -->
                     <systemPropertyVariables>
@@ -104,5 +197,163 @@
         </plugins>
     </build>
 
+    <!--
+      'report' profile: opt-in auto-open of the Allure report.
+      `mvn clean verify -Preport` runs the suite, then serves + opens the report in a browser.
+      Kept in a profile so plain `mvn test` and CI never launch a blocking web server.
+    -->
+    <profiles>
+        <!--
+          'web' profile: runs only the web-tagged UI tests via testng-web.xml (group include "web").
+            mvn test -Pweb
+          Kept separate from the default suite so you can trigger the web group in isolation.
+        -->
+        <profile>
+            <id>web</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <suiteXmlFiles combine.self="override">
+                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-web.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+          'api' profile: runs only the api-tagged REST tests via testng-api.xml (group include "api").
+            mvn test -Papi
+          Browser-free, so it needs no device and no web driver.
+        -->
+        <profile>
+            <id>api</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <suiteXmlFiles combine.self="override">
+                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-api.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+          'mobile' profile: runs the Android (Appium) suite instead of the web suite.
+          `mvn test -Pmobile` self-starts the Appium server, auto-detects the connected device,
+          and runs testng-mobile.xml. Kept out of the default build so plain `mvn test` and CI
+          stay web-only and never require a device.
+        -->
+        <profile>
+            <id>mobile</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <suiteXmlFiles combine.self="override">
+                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-mobile.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                            <systemPropertyVariables>
+                                <platform>android</platform>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+          'mobile-native' profile: launches a native Android app instead of mobile web.
+          Provide the app under test as either an apk path OR an installed package + activity, e.g.
+            mvn test -Pmobile-native -Dapp=C:/abs/path/app.apk
+            mvn test -Pmobile-native -DappPackage=com.example.app -DappActivity=com.example.app.MainActivity
+          Runs testng-mobile-native.xml (a browser-free launch test) so no web calls hit the session.
+        -->
+        <profile>
+            <id>mobile-native</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <suiteXmlFiles combine.self="override">
+                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-mobile-native.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                            <systemPropertyVariables>
+                                <platform>android</platform>
+                                <androidTarget>native</androidTarget>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+          'mobile-myntra' profile: runs the Myntra Android app suite (5 end-to-end tests).
+          Zero manual setup — the app self-installs from the Play Store if absent. Just:
+            mvn test -Pmobile-myntra
+          Runs testng-mobile-myntra.xml on a native (browser-free) session.
+        -->
+        <profile>
+            <id>mobile-myntra</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <suiteXmlFiles combine.self="override">
+                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-mobile-myntra.xml</suiteXmlFile>
+                            </suiteXmlFiles>
+                            <systemPropertyVariables>
+                                <platform>android</platform>
+                                <androidTarget>native</androidTarget>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>report</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>io.qameta.allure</groupId>
+                        <artifactId>allure-maven</artifactId>
+                        <version>2.15.2</version>
+                        <configuration>
+                            <!-- Pin to the report engine bundled under .allure to keep output consistent. -->
+                            <reportVersion>2.30.0</reportVersion>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>serve-allure-report</id>
+                                <!-- Runs after the test phase has produced target/allure-results. -->
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>serve</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
