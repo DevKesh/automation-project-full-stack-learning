@@ -1,0 +1,33 @@
+# Reusable sub-flow: cold-launch TC2 and sign in.
+# Called by smoke cases via `runFlow`. Credentials come from env vars passed at
+# runtime (-e TC2_USERNAME=... -e TC2_PASSWORD=...). This is Maestro's shared-setup
+# mechanism (analogous to a login PageObject/@BeforeMethod in the Java suite).
+appId: com.alarmnet.tc2
+---
+- launchApp:
+    appId: com.alarmnet.tc2
+    stopApp: true
+
+- assertVisible:
+    id: "com.alarmnet.tc2:id/edit_txt_username"
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/edit_txt_username"
+- inputText: ${TC2_USERNAME}
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/edit_txt_password"
+- inputText: ${TC2_PASSWORD}
+
+- hideKeyboard
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/btn_login"
+
+# Wait for the dashboard: the toolbar nav icon is present on every logged-in
+# screen (and absent on the Login Page), so it is the most stable "login
+# succeeded" signal — unlike the scrollable welcome widget.
+- extendedWaitUntil:
+    visible:
+      id: "com.alarmnet.tc2:id/navigation_menu"
+    timeout: 40000

@@ -40,10 +40,10 @@ test.
 
 | Layer | Package | Responsibility | You touch it when… |
 |-------|---------|----------------|--------------------|
-| **Test** | `com.project.qa.tests` (+ `.api`) | Orchestrates the scenario, holds the **assertions** | Always — every new case |
-| **Page Object** (UI) | `com.project.qa.pages` | Hides locators, exposes business actions via `BasePage` | The screen under test is new/changed |
-| **Service / Endpoint** (API) | `com.project.qa.api.services` | Hides HTTP verbs + paths behind intent methods | The endpoint is new |
-| **Data** | `com.project.qa.data` + `src/test/resources/*.json` | Type-safe test inputs (POJO + JSON) | The case is data-driven |
+| **Test** | `com.project.qa.tests.web` / `com.project.qa.tests.mobile` / `com.project.qa.tests.api` | Orchestrates the scenario, holds the **assertions** | Always — every new case |
+| **Page Object** (UI) | `com.project.qa.pageobjects.web` / `com.project.qa.pageobjects.mobile` (shared base in `com.project.qa.pageobjects.common`) | Hides locators, exposes business actions via `BasePage` | The screen under test is new/changed |
+| **Service / Endpoint** (API) | `com.project.qa.testsupport.api.services` | Hides HTTP verbs + paths behind intent methods | The endpoint is new |
+| **Data** | `com.project.qa.datamodels` + `src/test/resources/data/*.json` | Type-safe test inputs (POJO + JSON) | The case is data-driven |
 
 **The one rule that protects all of this:** assertions live in the **test** layer. Page Objects and
 Services return data; they never assert. This keeps them reusable across many tests with different
@@ -91,8 +91,9 @@ them.
 ### Step 1 — add a Page Object (only if the screen isn't modelled yet)
 
 ```java
-package com.project.qa.pages;
+package com.project.qa.pageobjects.web;
 
+import com.project.qa.pageobjects.common.BasePage;
 import org.openqa.selenium.By;
 
 public class MyntraCartPage extends BasePage {
@@ -110,11 +111,12 @@ public class MyntraCartPage extends BasePage {
 ### Step 2 — write the test
 
 ```java
-package com.project.qa.tests;
+package com.project.qa.tests.web;
 
-import com.project.qa.constants.TestGroups;
-import com.project.qa.pages.MyntraHomePage;
-import com.project.qa.pages.MyntraSearchResultsPage;
+import com.project.qa.testsupport.base.BaseTest;
+import com.project.qa.testsupport.constants.TestGroups;
+import com.project.qa.pageobjects.web.MyntraHomePage;
+import com.project.qa.pageobjects.web.MyntraSearchResultsPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.Assert;
@@ -143,7 +145,7 @@ public class CartTest extends BaseTest {
 mvn test "-Pweb"
 ```
 
-**Why nothing else is required:** `testng-web.xml` scans the whole `com.project.qa.tests` package and
+**Why nothing else is required:** `testng-web.xml` scans the whole `com.project.qa.tests.web` package and
 filters by the `web` group. Your `@Test(groups = WEB)` matches, so it joins the run automatically.
 
 ---
@@ -153,10 +155,10 @@ filters by the `web` group. Your `@Test(groups = WEB)` matches, so it joins the 
 Use this when the *same* steps run against many inputs. `SearchProductsTest` is the reference
 implementation.
 
-### Step 1 — model the row as a POJO (in `com.project.qa.data`)
+### Step 1 — model the row as a POJO (in `com.project.qa.datamodels`)
 
 ```java
-package com.project.qa.data;
+package com.project.qa.datamodels;
 
 public class SearchData {
     private String keyword;                 // field name must match the JSON key
@@ -212,7 +214,7 @@ public void testMyntraProductSearch(SearchData searchData) {
 The API side mirrors the UI side: a **Service** is the endpoint-level analogue of a Page Object.
 `PostApiTest` + `PostService` are the reference.
 
-### Step 1 — model the payload (`com.project.qa.api.models`)
+### Step 1 — model the payload (`com.project.qa.testsupport.api.models`)
 
 ```java
 public class Comment {
@@ -222,7 +224,7 @@ public class Comment {
 }
 ```
 
-### Step 2 — add a Service method (`com.project.qa.api.services`)
+### Step 2 — add a Service method (`com.project.qa.testsupport.api.services`)
 
 ```java
 public class CommentService {
@@ -280,15 +282,15 @@ alone can't tell them apart, so each suite pins its exact classes. If they all p
 
 So, for a mobile test:
 
-1. `extends BaseTest`, `@Test(groups = TestGroups.MOBILE)`, Page Objects in `com.project.qa.pages`
+1. `extends BaseTest`, `@Test(groups = TestGroups.MOBILE)`, Page Objects in `com.project.qa.pageobjects.mobile`
    (content-desc locators for the React Native app — see `MyntraAppHomePage`).
 2. **Register the class** under the matching suite:
 
 ```xml
 <test name="Myntra Native App Tests">
     <classes>
-        <class name="com.project.qa.tests.MyntraAppTest"/>
-        <class name="com.project.qa.tests.MyNewMobileTest"/>   <!-- add this line -->
+        <class name="com.project.qa.tests.mobile.MyntraAppTest"/>
+        <class name="com.project.qa.tests.mobile.MyNewMobileTest"/>   <!-- add this line -->
     </classes>
 </test>
 ```
@@ -306,7 +308,7 @@ The web and API suites use TestNG **package scanning** filtered by group, instea
 </groups>
 <test name="Web UI Tests">
     <packages>
-        <package name="com.project.qa.tests"/>   <!-- scans the package; the filter above narrows it -->
+        <package name="com.project.qa.tests.web"/>   <!-- scans the package; the filter above narrows it -->
     </packages>
 </test>
 ```
@@ -316,9 +318,10 @@ The web and API suites use TestNG **package scanning** filtered by group, instea
 - **A new test can't be forgotten.** With a manual `<class>` list, omitting a line means the test
   silently never runs — a green build with zero coverage, the worst failure mode. Package scan
   removes that trap entirely.
-- **The group filter is the real gate.** Mobile tests physically live in `com.project.qa.tests` too,
-  but they're tagged `mobile`, so the `web` filter skips them. Selection is driven by an intentional
-  annotation, not by file placement.
+- **Tests are split by platform, selected by group.** Each platform now has its own package —
+  `com.project.qa.tests.web`, `com.project.qa.tests.mobile`, `com.project.qa.tests.api` — so a new joiner finds the
+  right tests by folder alone. The `web` suite scans only `com.project.qa.tests.web`, and the `web` group
+  tag confirms intent, so a device-dependent mobile test can never leak into a headless web run.
 - **Zero-friction growth.** Adding the 20th web test is identical to adding the 2nd: write the class,
   tag it, done.
 

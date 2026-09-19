@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!-- Web-only suite. The <groups><run><include> filter runs just the @Test methods tagged "web".
+     parallel="methods" gives each test its own thread, backed by an isolated ThreadLocal WebDriver.
+     Run with: mvn test -Pweb -->
+<suite name="Web Suite" verbose="1" parallel="methods" thread-count="2" data-provider-thread-count="3">
+
+    <listeners>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+        <listener class-name="com.project.qa.testsupport.listeners.ScreenshotListener"/>
+        <!-- Auto-attaches RetryAnalyzer to every @Test; retry.count in config controls attempts -->
+        <listener class-name="com.project.qa.testsupport.listeners.RetryTransformer"/>
+    </listeners>
+
+    <groups>
+        <run>
+            <include name="web"/>
+        </run>
+    </groups>
+
+    <!-- Package scan, not a hand-maintained <class> list. Membership is decided by the "web" group
+         filter above: any @Test(groups = WEB) in this package auto-joins the suite, and the mobile
+         tests that share this package are excluded by the same filter. Adding a web test now needs
+         zero edits here - a missing class can no longer silently drop out of the run. -->
+    <test name="Web UI Tests">
+        <packages>
+            <package name="com.project.qa.tests.web"/>
+            <!-- Selenium interview-answer implementations (also @Test(groups = WEB)). Listed
+                 explicitly because a TestNG <package> scan does not recurse into sibling packages. -->
+            <package name="com.project.qa.tests.web.faq"/>
+        </packages>
+    </test>
+
+</suite>

@@ -1,0 +1,36 @@
+# TC2 Smoke 02 — Login with username + password.
+# Credentials come from env vars (never hardcoded in source):
+#   maestro test flows/tc2_02_login.yaml -e TC2_USERNAME=you@x.com -e TC2_PASSWORD=secret
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+- launchApp:
+    appId: com.alarmnet.tc2
+    stopApp: true
+
+# Confirm we are on the login screen before acting.
+- assertVisible:
+    id: "com.alarmnet.tc2:id/edit_txt_username"
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/edit_txt_username"
+- inputText: ${TC2_USERNAME}
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/edit_txt_password"
+- inputText: ${TC2_PASSWORD}
+
+# Dismiss the keyboard so the SIGN IN button is reliably tappable.
+- hideKeyboard
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/btn_login"
+
+# The username/password fields must be gone once login succeeds — this is the
+# oracle that the sign-in actually left the Login Page.
+- extendedWaitUntil:
+    notVisible:
+      id: "com.alarmnet.tc2:id/edit_txt_username"
+    timeout: 20000

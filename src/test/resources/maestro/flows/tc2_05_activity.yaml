@@ -1,0 +1,14 @@
+# TC2 Smoke 05 — Activity tab loads the events list.
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+- runFlow: ../subflows/tc2_login.yaml
+
+- tapOn:
+    text: "ACTIVITY"
+
+# The events list container is unique to the Activity screen.
+- assertVisible:
+    id: "com.alarmnet.tc2:id/events_layout"

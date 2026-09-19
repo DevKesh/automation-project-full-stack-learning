@@ -1,0 +1,16 @@
+# TC2 Smoke 06 — Partitions tab shows partitions and arm controls.
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+- runFlow: ../subflows/tc2_login.yaml
+
+- tapOn:
+    text: "PARTITIONS"
+
+# The partition list + arm controls confirm the Partitions screen rendered.
+- assertVisible:
+    id: "com.alarmnet.tc2:id/partition_tab_recycler_view"
+- assertVisible:
+    text: "ARM AWAY"

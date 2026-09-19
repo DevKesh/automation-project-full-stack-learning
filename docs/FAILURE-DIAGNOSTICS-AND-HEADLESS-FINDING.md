@@ -25,7 +25,7 @@ It is registered in `testng.xml` alongside the Allure listener:
 
 ```xml
 <listener class-name="io.qameta.allure.testng.AllureTestNg" />
-<listener class-name="com.project.qa.listeners.ScreenshotListener" />
+<listener class-name="com.project.qa.testsupport.listeners.ScreenshotListener" />
 ```
 
 ### Why it is built this way
@@ -71,7 +71,7 @@ produced 6–7 failures, every one the same:
 org.openqa.selenium.TimeoutException:
 Expected condition failed: waiting for visibility of element located by
 By.className: desktop-searchBar (tried for 10 second(s) with 500 milliseconds interval)
-    at com.project.qa.pages.BasePage.type(BasePage.java:24)
+    at com.project.qa.pageobjects.common.BasePage.type(BasePage.java:24)
 ```
 
 The browser launched fine; the **Myntra search bar never appeared within 10s**, so `type()` timed

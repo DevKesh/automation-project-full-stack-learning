@@ -115,14 +115,14 @@
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>testng.xml</include>
+                    <include>suites/testng.xml</include>
                 </includes>
             </testResource>
             <testResource>
                 <directory>src/test/resources</directory>
                 <filtering>false</filtering>
                 <excludes>
-                    <exclude>testng.xml</exclude>
+                    <exclude>suites/testng.xml</exclude>
                 </excludes>
             </testResource>
         </testResources>
@@ -168,7 +168,7 @@
                 <version>3.2.5</version>
                 <configuration>
                     <suiteXmlFiles>
-                        <suiteXmlFile>${project.build.testOutputDirectory}/testng.xml</suiteXmlFile>
+                        <suiteXmlFile>${project.build.testOutputDirectory}/suites/testng.xml</suiteXmlFile>
                     </suiteXmlFiles>
                     <!-- ADD THIS BLOCK to force Allure into the target folder -->
                     <systemPropertyVariables>
@@ -217,7 +217,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <suiteXmlFiles combine.self="override">
-                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-web.xml</suiteXmlFile>
+                                <suiteXmlFile>${project.build.testOutputDirectory}/suites/testng-web.xml</suiteXmlFile>
                             </suiteXmlFiles>
                         </configuration>
                     </plugin>
@@ -239,7 +239,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <suiteXmlFiles combine.self="override">
-                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-api.xml</suiteXmlFile>
+                                <suiteXmlFile>${project.build.testOutputDirectory}/suites/testng-api.xml</suiteXmlFile>
                             </suiteXmlFiles>
                         </configuration>
                     </plugin>
@@ -262,7 +262,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <suiteXmlFiles combine.self="override">
-                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-mobile.xml</suiteXmlFile>
+                                <suiteXmlFile>${project.build.testOutputDirectory}/suites/testng-mobile.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <systemPropertyVariables>
                                 <platform>android</platform>
@@ -289,7 +289,7 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <suiteXmlFiles combine.self="override">
-                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-mobile-native.xml</suiteXmlFile>
+                                <suiteXmlFile>${project.build.testOutputDirectory}/suites/testng-mobile-native.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <systemPropertyVariables>
                                 <platform>android</platform>
@@ -316,12 +316,43 @@
                         <artifactId>maven-surefire-plugin</artifactId>
                         <configuration>
                             <suiteXmlFiles combine.self="override">
-                                <suiteXmlFile>${project.build.testOutputDirectory}/testng-mobile-myntra.xml</suiteXmlFile>
+                                <suiteXmlFile>${project.build.testOutputDirectory}/suites/testng-mobile-myntra.xml</suiteXmlFile>
                             </suiteXmlFiles>
                             <systemPropertyVariables>
                                 <platform>android</platform>
                                 <androidTarget>native</androidTarget>
                             </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!--
+          'maestro' profile: runs the Maestro YAML flows as TestNG tests (MaestroSmokeTest), so they
+          execute in the same `mvn test` run and Allure report as the Java suites — with no Maestro
+          CLI commands to memorise. Each flow under src/test/resources/maestro/flows is auto-
+          discovered as one test case.
+
+          Run:
+            mvn test -Pmaestro -Dtc2.username=<user> -Dtc2.password=<pass>
+          Prerequisites:
+            * A device/emulator is connected (adb devices shows one).
+            * The Maestro CLI is on PATH, OR pass its location: -Dmaestro.exe="C:\path\to\maestro.bat"
+          Credentials are read from -Dtc2.* (or the TC2_USERNAME / TC2_PASSWORD env vars) and are
+          never committed. Flows with no credentials run unaffected.
+        -->
+        <profile>
+            <id>maestro</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <suiteXmlFiles combine.self="override">
+                                <suiteXmlFile>${project.build.testOutputDirectory}/suites/testng-maestro.xml</suiteXmlFile>
+                            </suiteXmlFiles>
                         </configuration>
                     </plugin>
                 </plugins>

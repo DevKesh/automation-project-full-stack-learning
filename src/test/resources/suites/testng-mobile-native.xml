@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!-- Native Android app suite. thread-count=1 (one physical device, one session). The test does no
+     browser calls, so it is valid on a native session. Run with:
+       mvn test -Pmobile-native -Dapp=C:/abs/path/app.apk
+       mvn test -Pmobile-native -DappPackage=com.example.app -DappActivity=com.example.app.MainActivity -->
+<suite name="Android Native Suite" verbose="1" thread-count="1">
+
+    <listeners>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+        <listener class-name="com.project.qa.testsupport.listeners.ScreenshotListener"/>
+        <!-- Auto-attaches RetryAnalyzer to every @Test; retry.count in config controls attempts -->
+        <listener class-name="com.project.qa.testsupport.listeners.RetryTransformer"/>
+    </listeners>
+
+    <groups>
+        <run>
+            <include name="mobile"/>
+        </run>
+    </groups>
+
+    <test name="Android Native App Tests">
+        <classes>
+            <class name="com.project.qa.tests.mobile.LaunchDeviceAppTest"/>
+        </classes>
+    </test>
+
+</suite>

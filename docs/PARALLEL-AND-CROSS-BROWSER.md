@@ -177,11 +177,11 @@ accidental token substitution.
 
 | File | Role |
 |------|------|
-| `src/test/resources/config.properties` | Committed defaults (`browser`, `headless`, `threads`) |
-| `src/main/java/com/project/qa/config/ConfigReader.java` | Config loader with system-property override |
-| `src/main/java/com/project/qa/core/BrowserType.java` | Supported-browser enum with safe parsing |
-| `src/main/java/com/project/qa/core/DriverFactory.java` | Per-browser option builders + factory switch |
-| `src/test/resources/testng.xml` | Parallel attributes + `${threads}` token |
+| `src/test/resources/config/config.properties` | Committed defaults (`browser`, `headless`, `threads`) |
+| `src/main/java/com/project/qa/framework/configuration/ConfigReader.java` | Config loader with system-property override |
+| `src/main/java/com/project/qa/framework/webdriver/BrowserType.java` | Supported-browser enum with safe parsing |
+| `src/main/java/com/project/qa/framework/webdriver/DriverFactory.java` | Per-browser option builders + factory switch |
+| `src/test/resources/suites/testng.xml` | Parallel attributes + `${threads}` token |
 | `src/test/resources/logback-test.xml` | `[%thread]` in log pattern |
 | `pom.xml` | `threads` property, `testng.xml` filtering, filtered-copy suite path, `report` profile |
 

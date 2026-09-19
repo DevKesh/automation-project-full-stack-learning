@@ -1,0 +1,16 @@
+# TC2 Smoke 04 — Cameras tab loads.
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+- runFlow: ../subflows/tc2_login.yaml
+
+- tapOn:
+    text: "CAMERAS"
+
+# The 'Camera' label + add-camera container are unique to the Cameras screen.
+- assertVisible:
+    id: "com.alarmnet.tc2:id/add_camera_layout"
+- assertVisible:
+    text: "Camera"

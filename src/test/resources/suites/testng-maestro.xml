@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!-- Maestro UI flows surfaced as TestNG tests. thread-count=1 because the flows share one device
+     and several sign in/out of the same account, so they must run sequentially.
+     Run: mvn test -Pmaestro -Dtc2.username=<user> -Dtc2.password=<pass> -->
+<suite name="Maestro Smoke Suite" verbose="1" thread-count="1">
+
+    <listeners>
+        <listener class-name="io.qameta.allure.testng.AllureTestNg"/>
+    </listeners>
+
+    <groups>
+        <run>
+            <include name="maestro"/>
+        </run>
+    </groups>
+
+    <test name="Maestro Mobile Flows">
+        <classes>
+            <class name="com.project.qa.tests.maestro.MaestroSmokeTest"/>
+        </classes>
+    </test>
+
+</suite>

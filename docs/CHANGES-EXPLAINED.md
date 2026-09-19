@@ -1,5 +1,10 @@
 # Changes Explained — File-by-File Review Guide
 
+> **Note:** This is a historical changelog for the mobile-feature addition. File paths have been
+> updated to the current package layout (`framework/`, `pageobjects/`, `tests/`, `testsupport/`).
+> For the up-to-date structure and onboarding map, see [../ONBOARDING.md](../ONBOARDING.md) and
+> [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 > Purpose: help you review the uncommitted changes with confidence before approving them. Every
 > added or modified file is listed with **what it is**, **why it exists**, and **how it helps run the
 > automation**. Files are grouped by role, newest-feature-first.
@@ -41,13 +46,13 @@ Test (@Test)
 
 | File | MOD | What changed | Why |
 |------|-----|--------------|-----|
-| `src/main/java/com/project/qa/core/DriverFactory.java` | MOD | Added a `PlatformType` switch: `WEB → createWebDriver()`, `ANDROID → MobileDriverFactory.createDriver()`. All the existing browser-building code is untouched, just moved under `createWebDriver()`. | This is the single seam where mobile plugs in. Web behaviour is byte-for-byte the same when `platform=web` (the default). |
+| `src/main/java/com/project/qa/framework/webdriver/DriverFactory.java` | MOD | Added a `PlatformType` switch: `WEB → createWebDriver()`, `ANDROID → MobileDriverFactory.createDriver()`. All the existing browser-building code is untouched, just moved under `createWebDriver()`. | This is the single seam where mobile plugs in. Web behaviour is byte-for-byte the same when `platform=web` (the default). |
 | `pom.xml` | MOD | Added `io.appium:java-client:9.3.0`; **pinned `selenium.version=4.25.0`**; added Maven profiles `mobile`, `mobile-native`, `mobile-myntra`. | java-client brings Appium support. The Selenium pin is critical (see box below). Profiles select the right TestNG suite + set `platform`/`androidTarget` so you don't pass them by hand. |
-| `src/test/resources/config.properties` | MOD | Added mobile keys (`platform`, `androidTarget`, and commented `app`, `appPackage`, `appActivity`, `appiumServerUrl`, `deviceUdid`). Defaults keep `platform=web`. | Committed defaults so a plain `mvn test` still runs web. Mobile keys are documented inline for discoverability. |
+| `src/test/resources/config/config.properties` | MOD | Added mobile keys (`platform`, `androidTarget`, and commented `app`, `appPackage`, `appActivity`, `appiumServerUrl`, `deviceUdid`). Defaults keep `platform=web`. | Committed defaults so a plain `mvn test` still runs web. Mobile keys are documented inline for discoverability. |
 | `docs/ARCHITECTURE.md` | MOD | Cross-links to the new mobile/commands docs. | Keeps the docs navigable. |
-| `src/test/resources/testng.xml` | MOD | (Web suite descriptor.) | Pre-existing web suite; unrelated to mobile behaviour. |
+| `src/test/resources/suites/testng.xml` | MOD | (Web suite descriptor.) | Pre-existing web suite; unrelated to mobile behaviour. |
 | `src/test/resources/logback-test.xml` | MOD | Logging config. | Controls log verbosity (business logic on INFO, framework noise on DEBUG). |
-| `src/test/java/com/project/qa/tests/SearchProductsTest.java` | MOD | Existing web test. | Pre-existing; not part of the mobile feature. |
+| `src/test/java/com/project/qa/tests/web/SearchProductsTest.java` | MOD | Existing web test. | Pre-existing; not part of the mobile feature. |
 
 > ⚠️ **Why `selenium.version=4.25.0` must stay:** `java-client 9.3.0` declares Selenium as a soft
 > range `[4.19.0, 5.0)`, so Maven would otherwise float to **4.46.0**, which **removed**
@@ -56,7 +61,7 @@ Test (@Test)
 
 ---
 
-## 3. NEW — Core mobile plumbing (`src/main/java/com/project/qa/core/`)
+## 3. NEW — Core mobile plumbing (`src/main/java/com/project/qa/framework/mobiledriver/` + `framework/webdriver/`)
 
 These are the heart of the mobile capability. Each does exactly one job.
 
@@ -131,7 +136,7 @@ Enum `CHROME | FIREFOX | EDGE` for the web path. Foundational (used by `DriverFa
 
 ---
 
-## 4. NEW — Config access (`src/main/java/com/project/qa/config/`)
+## 4. NEW — Config access (`src/main/java/com/project/qa/framework/configuration/`)
 
 ### `ConfigReader.java` **NEW**
 Central config gateway. Resolution order per key: **`-Dkey` system property first, then
@@ -142,7 +147,7 @@ lets "package only" trigger discovery/Play-Store paths.
 
 ---
 
-## 5. NEW — Mobile Page Objects (`src/main/java/com/project/qa/pages/`)
+## 5. NEW — Mobile Page Objects (`src/main/java/com/project/qa/pageobjects/mobile/`)
 
 Mirrors the existing web POM style (private locators, public intent-revealing actions, fluent
 hand-off). Locators are **content-desc** based because the Myntra app is React Native and doesn't
@@ -160,7 +165,7 @@ Search page. `searchFor(term)` types into `search_default_search_text_input` and
 
 ---
 
-## 6. NEW — Tests (`src/test/java/com/project/qa/tests/`)
+## 6. NEW — Tests (`src/test/java/com/project/qa/tests/mobile/`)
 
 | File | NEW | What it proves | Profile |
 |------|-----|----------------|---------|
@@ -179,9 +184,9 @@ Search page. `searchFor(term)` types into `search_default_search_text_input` and
 
 | File | NEW | Role |
 |------|-----|------|
-| `src/test/resources/testng-mobile.xml` | NEW | Mobile-web suite (`MobileWebSmokeTest`). Selected by `-Pmobile`. |
-| `src/test/resources/testng-mobile-native.xml` | NEW | Native suite (`LaunchDeviceAppTest`). Selected by `-Pmobile-native`. |
-| `src/test/resources/testng-mobile-myntra.xml` | NEW | Myntra suite (`MyntraAppTest`). Selected by `-Pmobile-myntra`. |
+| `src/test/resources/suites/testng-mobile.xml` | NEW | Mobile-web suite (`MobileWebSmokeTest`). Selected by `-Pmobile`. |
+| `src/test/resources/suites/testng-mobile-native.xml` | NEW | Native suite (`LaunchDeviceAppTest`). Selected by `-Pmobile-native`. |
+| `src/test/resources/suites/testng-mobile-myntra.xml` | NEW | Myntra suite (`MyntraAppTest`). Selected by `-Pmobile-myntra`. |
 
 Each `thread-count=1` (one physical device = one session) and registers the Allure + screenshot
 listeners. The matching Maven profile in `pom.xml` overrides the surefire `suiteXmlFile` and sets

@@ -44,7 +44,7 @@ mvn test "-Pmobile-myntra"  # Myntra native app    (MyntraAppTest)
 
 ### What changed
 
-- Added a `com.project.qa.constants.TestGroups` class holding the group-name constants
+- Added a `com.project.qa.testsupport.constants.TestGroups` class holding the group-name constants
   (`API`, `WEB`, `MOBILE`).
 - Tagged every `@Test` with `groups = TestGroups.X`.
 - Added `testng-api.xml` and `testng-web.xml`, each with a `<groups><run><include>` filter that runs
@@ -303,7 +303,7 @@ appium driver update uiautomator2                # update the Android driver
 
 ## 6. Configuration keys (override any with `-Dkey=value`)
 
-Committed defaults live in `src/test/resources/config.properties`; the `mobile` / `mobile-native`
+Committed defaults live in `src/test/resources/config/config.properties`; the `mobile` / `mobile-native`
 profiles set `platform`/`androidTarget` for you.
 
 | Key | Purpose | Example |

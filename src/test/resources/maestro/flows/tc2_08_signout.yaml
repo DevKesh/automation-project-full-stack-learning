@@ -1,0 +1,23 @@
+# TC2 Smoke 08 — Sign out returns to the Login Page.
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+- runFlow: ../subflows/tc2_login.yaml
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/navigation_menu"
+
+- tapOn:
+    text: "Sign Out"
+
+# Confirm the "Do you want to sign out?" dialog.
+- tapOn:
+    text: "OK"
+
+# Back on the login screen: the SIGN IN button / username field reappear.
+- extendedWaitUntil:
+    visible:
+      id: "com.alarmnet.tc2:id/btn_login"
+    timeout: 20000

@@ -1,0 +1,16 @@
+# TC2 Smoke 07 — Navigation drawer opens and shows menu items.
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+- runFlow: ../subflows/tc2_login.yaml
+
+- tapOn:
+    id: "com.alarmnet.tc2:id/navigation_menu"
+
+# The drawer is open once its menu items are visible.
+- assertVisible:
+    text: "Settings"
+- assertVisible:
+    text: "Sign Out"

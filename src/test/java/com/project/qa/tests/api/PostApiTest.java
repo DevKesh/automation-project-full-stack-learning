@@ -1,9 +1,9 @@
 package com.project.qa.tests.api;
 
-import com.project.qa.api.ApiValidator;
-import com.project.qa.api.models.Post;
-import com.project.qa.api.services.PostService;
-import com.project.qa.constants.TestGroups;
+import com.project.qa.testsupport.api.ApiValidator;
+import com.project.qa.testsupport.api.models.Post;
+import com.project.qa.testsupport.api.services.PostService;
+import com.project.qa.testsupport.constants.TestGroups;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.qameta.allure.Description;
 import io.qameta.allure.Epic;

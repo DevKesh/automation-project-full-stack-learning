@@ -31,17 +31,34 @@ We utilize a strict standard Maven directory structure to enforce the separation
 
 ```
 src/
-├── main/
-│   └── java/
-│       └── com/project/qa/
-│           ├── core/       (Driver lifecycle, config management)
-│           ├── pages/      (Page Objects: locators and actions)
-│           └── utils/      (Explicit waits, string parsers)
-└── test/
-    └── java/
-        └── com/project/qa/
-            └── tests/      (Actual test scripts)
+├── main/                                   ← THE ENGINE + PAGE OBJECTS (never contains @Test)
+│   └── java/com/project/qa/
+│       ├── framework/
+│       │   ├── configuration/  (ConfigReader — env overlays)
+│       │   ├── webdriver/      (DriverFactory, DriverManager, BrowserType, PlatformType)
+│       │   ├── mobiledriver/   (MobileDriverFactory + Appium device helpers)
+│       │   ├── maestro/        (MaestroRunner, MaestroResult — Maestro CLI bridge)
+│       │   └── utilities/      (JsonReader, shared helpers)
+│       ├── pageobjects/        (Page Object Model)
+│       │   ├── common/  (BasePage)  ├── web/   └── mobile/
+│       └── datamodels/         (SearchData, SearchResult — POJOs)
+└── test/                                   ← THE TESTS + their support
+    ├── java/com/project/qa/
+    │   ├── tests/              (ONLY @Test classes)
+    │   │   ├── web/ (+ web/faq)  ├── mobile/  ├── api/  └── maestro/
+    │   └── testsupport/        (test-only, no @Test)
+    │       ├── base/  (BaseTest, ApiBaseTest lives under tests/api)
+    │       ├── listeners/  ├── constants/
+    │       ├── api/   (ApiSpecFactory, ApiValidator, services/, models/)
+    │       └── web/faq/ (broken-link/-image scanners + POJOs)
+    └── resources/
+        ├── suites/  (all testng*.xml)   ├── config/  (config*.properties)
+        ├── data/    (searchData.json)   └── maestro/ (flows, subflows, snapshots)
 ```
+
+**Read the tree as one sentence:** `main` is the engine, `test` is the tests, and both are split
+the same way — `web / mobile / api`. Tracing any scenario follows the same triplet, e.g.
+`tests/web/SearchProductsTest` → `pageobjects/web/MyntraHomePage` → `framework/webdriver/DriverManager`.
 
 ### pom.xml Configuration
 
@@ -113,7 +130,7 @@ To achieve true, stable parallel execution without flaky race conditions, we iso
 This utility class manages memory isolation using the Java Virtual Machine thread model.
 
 ```java
-package com.project.qa.core;
+package com.project.qa.framework.webdriver;
 
 import org.openqa.selenium.WebDriver;
 
@@ -145,7 +162,7 @@ public class DriverManager {
 This class handles the W3C protocol handshake and browser process creation.
 
 ```java
-package com.project.qa.core;
+package com.project.qa.framework.webdriver;
 
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
@@ -180,10 +197,10 @@ Tests should never manage their own drivers or state setup. We use inheritance t
 ### 1. Lifecycle Control: `BaseTest.java`
 
 ```java
-package com.project.qa.tests;
+package com.project.qa.testsupport.base;
 
-import com.project.qa.core.DriverFactory;
-import com.project.qa.core.DriverManager;
+import com.project.qa.framework.webdriver.DriverFactory;
+import com.project.qa.framework.webdriver.DriverManager;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
@@ -204,9 +221,10 @@ public class BaseTest {
 ### 2. Test Implementation: `MyntraTest.java`
 
 ```java
-package com.project.qa.tests;
+package com.project.qa.tests.web;
 
-import com.project.qa.core.DriverManager;
+import com.project.qa.testsupport.base.BaseTest;
+import com.project.qa.framework.webdriver.DriverManager;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 

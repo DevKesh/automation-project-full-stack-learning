@@ -1,0 +1,16 @@
+# TC2 Smoke 01 — Launch the app on the connected device.
+# Goal: cold-start Total Connect 2.0 and confirm the first screen renders.
+# appId is the Android package name (adb shell pm list packages | findstr tc2).
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+# stopApp: true forces a clean cold start so the launch is deterministic.
+- launchApp:
+    appId: com.alarmnet.tc2
+    stopApp: true
+
+# The app is up once the login screen's SIGN IN button is on screen.
+- assertVisible:
+    text: "SIGN IN"

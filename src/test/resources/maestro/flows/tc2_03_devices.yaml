@@ -1,0 +1,15 @@
+# TC2 Smoke 03 — Devices tab loads.
+# Reuses the login sub-flow, then opens DEVICES and asserts the device list screen.
+appId: com.alarmnet.tc2
+tags:
+  - smoke
+  - tc2
+---
+- runFlow: ../subflows/tc2_login.yaml
+
+- tapOn:
+    text: "DEVICES"
+
+# 'Add devices' menu is unique to the Devices screen — proves we navigated.
+- assertVisible:
+    id: "com.alarmnet.tc2:id/automation_manage_device_menu"

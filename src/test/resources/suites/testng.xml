@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<!-- parallel="methods": each @Test runs on its own thread, backed by an isolated ThreadLocal WebDriver.
+     data-provider-thread-count: caps concurrent rows for parallel-enabled DataProviders. -->
+<suite name="Myntra Automation Suite" verbose="1" parallel="methods" thread-count="${threads}" data-provider-thread-count="${threads}">
+
+    <listeners>
+        <!-- This single line wires up Allure to your entire suite -->
+        <listener class-name="io.qameta.allure.testng.AllureTestNg" />
+        <!-- Captures a screenshot + page source into Allure on any test failure -->
+        <listener class-name="com.project.qa.testsupport.listeners.ScreenshotListener" />
+        <!-- Auto-attaches RetryAnalyzer to every @Test; retry.count in config controls attempts -->
+        <listener class-name="com.project.qa.testsupport.listeners.RetryTransformer" />
+    </listeners>
+
+    <!-- Default suite = web + api only (never mobile, which needs a device). The include filter
+         is what keeps mobile out: the mobile tests live in com.project.qa.tests.web too, but without
+         "mobile" here the package scan below skips them. -->
+    <groups>
+        <run>
+            <include name="web"/>
+            <include name="api"/>
+        </run>
+    </groups>
+
+    <!-- Package scan instead of a hand-maintained <class> list: any @Test(groups = WEB) in this
+         package auto-joins the run, so a new web test can no longer be forgotten out of the suite. -->
+    <test name="Product Search Tests">
+        <packages>
+            <package name="com.project.qa.tests.web"/>
+            <!-- Selenium interview-answer implementations, filtered in by the "web" group above. -->
+            <package name="com.project.qa.tests.web.faq"/>
+        </packages>
+    </test>
+
+    <!-- API suite: browser-free REST Assured tests. Runs under the suite's parallel="methods"
+         since the calls are stateless. Package-scanned + filtered by the "api" group above. -->
+    <test name="API Tests">
+        <packages>
+            <package name="com.project.qa.tests.api"/>
+        </packages>
+    </test>
+
+</suite>
